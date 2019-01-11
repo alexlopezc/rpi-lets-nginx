@@ -100,3 +100,37 @@ FROM smashwilson/lets-nginx
 
 ADD nginx.conf /templates/nginx.conf
 ```
+
+
+## Example of usage with docker registry
+
+```bash
+mkdir volumes
+export REGISTRY_DOMAIN=nexus.rokubun.synology.me
+export DOMAIN_ADMIN_EMAIL=alex.lopez@rokubun.cat
+
+
+docker run -d --name registry --restart=always \
+  -p 5000:5000 \
+  -v $(pwd)/volumes/registry/var/lib/registry:/var/lib/registry \
+  -v $(pwd)/volumes/registry/auth:/auth \
+  -e REGISTRY_HTTP_HOST=https://${REGISTRY_DOMAIN} \
+  -e REGISTRY_AUTH_HTPASSWD_REALM=${REGISTRY_DOMAIN} \
+  -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+  registry:2
+
+docker run --entrypoint htpasswd registry:2 -Bbn alex _413x_ >> $(pwd)/volumes/registry/auth/htpasswd
+
+
+docker run -d --name lets-nginx --restart=always \
+  --link registry:registry \
+  -p 80:80 \
+  -p 443:443 \
+  -v $(pwd)/volumes/lets-nginx/cache:/cache \
+  -v $(pwd)/volumes/lets-nginx/etc/letsencrypt:/etc/letsencrypt \
+  -e EMAIL=${DOMAIN_ADMIN_EMAIL} \
+  -e DOMAIN=${REGISTRY_DOMAIN} \
+  -e UPSTREAM=registry:5000 \
+  rpi-lets-nginx
+
+```
