@@ -1,5 +1,9 @@
 FROM xocru/rpi-nginx:1.14-alpine
-MAINTAINER Ash Wilson <smashwilson@gmail.com>
+# Base don the work from Ash Wilson <smashwilson@gmail.com>
+LABEL author="Alex Lopez <alexlopezcruces@gmail.com>"
+
+
+RUN [ "cross-build-start" ]
 
 #We need to install bash to easily handle arrays
 # in the entrypoint.sh script
@@ -20,5 +24,6 @@ ADD templates /templates
 
 # There is an expose in nginx:alpine image
 # EXPOSE 80 443
+RUN [ "cross-build-end" ]
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
