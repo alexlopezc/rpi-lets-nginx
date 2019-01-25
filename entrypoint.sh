@@ -64,13 +64,9 @@ chown nginx:nginx /var/tmp/nginx
 #create vhost directory
 mkdir -p /etc/nginx/vhosts/
 
-# Process the nginx.conf with raw values of $DOMAIN and $UPSTREAM to ensure backward-compatibility
-  dest="/etc/nginx/nginx.conf"
-  echo "Rendering template of nginx.conf"
-  sed -e "s/\${DOMAIN}/${DOMAIN}/g" \
-      -e "s/\${UPSTREAM}/${UPSTREAM}/" \
-      /templates/nginx.conf > "$dest"
-
+# Copy ngnix.conf to /etc directory
+echo "Copy template of nginx.conf"
+cp /templates/nginx.conf /etc/nginx/nginx.conf 
 
 # Process templates
 upstreamId=0
