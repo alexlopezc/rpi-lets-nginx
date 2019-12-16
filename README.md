@@ -105,32 +105,91 @@ ADD nginx.conf /templates/nginx.conf
 ## Example of usage with docker registry
 
 ```bash
-mkdir volumes
-export REGISTRY_DOMAIN=nexus.rokubun.synology.me
-export DOMAIN_ADMIN_EMAIL=alex.lopez@rokubun.cat
+sudo mkdir -p /volumes
+sudo chown $USER:$USER /volumes
+export DOMAIN_REGISTRY=registry.rokubun.synology.me
+export UPSTREAM_REGISTRY=registry:5000
 
 
+export DOMAIN=${DOMAIN_REGISTRY}
+export UPSTREAM=${UPSTREAM_REGISTRY}
+export DOMAIN_ADMIN_EMAIL="alex.lopez@rokubun.cat"
+
+
+export DOMAIN_MEDEA=medea.rokubun.synology.me
+export MEDEA_UPSTREAM=192.168.1.250:80
+docker-compose up -d
+```
+
+Create user in httpasswd
+
+```
+docker run --entrypoint htpasswd registry:2 -Bbn alex _413x_ >> /volumes/registry/auth/htpasswd
+```
+
+
+## Examples of running lets-nginx with some services
+```
 docker run -d --name registry --restart=always \
   -p 5000:5000 \
   -v $(pwd)/volumes/registry/var/lib/registry:/var/lib/registry \
   -v $(pwd)/volumes/registry/auth:/auth \
-  -e REGISTRY_HTTP_HOST=https://${REGISTRY_DOMAIN} \
-  -e REGISTRY_AUTH_HTPASSWD_REALM=${REGISTRY_DOMAIN} \
+  -e REGISTRY_HTTP_HOST=https://${DOMAIN_REGISTRY} \
+  -e REGISTRY_AUTH_HTPASSWD_REALM=${DOMAIN_REGISTRY} \
   -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
   registry:2
 
 docker run --entrypoint htpasswd registry:2 -Bbn alex _413x_ >> $(pwd)/volumes/registry/auth/htpasswd
 
+docker run --name lets-nginx --restart=always \
+  --link registry:registry \
+  -p 80:80 \
+  -p 443:443 \
+  -v /volumes/lets-nginx/cache:/cache \
+  -v /volumes/lets-nginx/etc/letsencrypt:/etc/letsencrypt \
+  -e EMAIL=${DOMAIN_ADMIN_EMAIL} \
+  -e DOMAIN=${DOMAIN_REGISTRY} \
+  -e UPSTREAM=registry:5000 \
+  xocru/rpi-lets-nginx
 
-docker run -d --name lets-nginx --restart=always \
+
+docker run --name lets-nginx --restart=always \
   --link registry:registry \
   -p 80:80 \
   -p 443:443 \
   -v $(pwd)/volumes/lets-nginx/cache:/cache \
   -v $(pwd)/volumes/lets-nginx/etc/letsencrypt:/etc/letsencrypt \
   -e EMAIL=${DOMAIN_ADMIN_EMAIL} \
-  -e DOMAIN=${REGISTRY_DOMAIN} \
-  -e UPSTREAM=registry:5000 \
+  -e DOMAIN=${DOMAIN} \
+  -e UPSTREAM=${UPSTREAM} \
   rpi-lets-nginx
+
+
+docker run --name lets-nginx  --rm --restart=always \
+  -p 80:80 \
+  -p 443:443 \
+  -v $(pwd)/volumes/lets-nginx/cache:/cache \
+  -v $(pwd)/volumes/lets-nginx/etc/letsencrypt:/etc/letsencrypt \
+  -e EMAIL=${DOMAIN_ADMIN_EMAIL} \
+  -e DOMAIN=${DOMAINS} \
+  -e UPSTREAM=${UPSTREAMS} \
+  local/rpi-lets-nginx
+
+
+
+
+export MEDEA_DOMAIN=medea.rokubun.synology.me
+export MEDEA_UPSTREAM=192.168.1.250
+export DOMAIN_ADMIN_EMAIL="alex.lopez@rokubun.cat"
+export DOMAINS="${MEDEA_DOMAIN}"
+export UPSTREAMS="${MEDEA_UPSTREAM}"
+  docker run --name medea-nginx  --restart=always \
+  -p 80:80 \
+  -p 443:443 \
+  -v $(pwd)/volumes/lets-nginx/cache:/cache \
+  -v $(pwd)/volumes/lets-nginx/etc/letsencrypt:/etc/letsencrypt \
+  -e EMAIL=${DOMAIN_ADMIN_EMAIL} \
+  -e DOMAIN=${DOMAINS} \
+  -e UPSTREAM=${UPSTREAMS} local/lets-rpi-nginx
 
 ```

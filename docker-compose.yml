@@ -1,0 +1,32 @@
+version: "3.4"
+
+services:
+  registry:
+    image: registry:2
+    container_name: registry
+    ports:
+      - 5000:5000
+    volumes:
+      - /home/pi/volumes/registry/var/lib/registry:/var/lib/registry 
+      - /home/pi/volumes/registry/auth:/auth
+    environment:
+      - REGISTRY_HTTP_HOST=https://${DOMAIN_REGISTRY}
+      - REGISTRY_AUTH_HTPASSWD_REALM=${DOMAIN_REGISTRY}
+      - REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd 
+    restart: always
+    
+  lets-nginx:
+    image: xocru/rpi-lets-nginx
+    container_name: rpi-lets-nginx
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /home/pi/volumes/lets-nginx/cache:/cache
+      - /home/pi/volumes/lets-nginx/etc/letsencrypt:/etc/letsencrypt
+    environment:
+      - EMAIL=${DOMAIN_ADMIN_EMAIL}
+      - DOMAIN=${DOMAIN}
+      - UPSTREAM=${UPSTREAM}
+    depends_on: 
+      - registry

@@ -114,7 +114,7 @@ if [ $fresh = true ]; then
   rm -rf /etc/letsencrypt/{live,archive,keys,renewal}
 
  echo "certbot certonly "${letscmd}" \
-  --standalone --preferred-challenges http --text \
+  --standalone --non-interactive --preferred-challenges http --text \
   "${SERVER}" \
   --email "${EMAIL}" --agree-tos \
   --expand " > /etc/nginx/lets
